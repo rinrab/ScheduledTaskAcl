@@ -16,7 +16,7 @@ function Get-ScheduledTaskAcl {
             try {
                 $folder = $scheduler.GetFolder($_.TaskPath)
                 $TaskX = $folder.GetTask($_.TaskName)
-                ConvertFrom-SddlString($TaskX.GetSecurityDescriptor(0xF))
+                $TaskX.GetSecurityDescriptor(0xF)
             }
             catch {
                 Write-Error $_
@@ -28,18 +28,40 @@ function Get-ScheduledTaskAcl {
     }
 }
 
-# Set-ScheduledTaskAcl($SecurityDescriptor)
-# {
-#     $Scheduler = New-Object -ComObject "Schedule.Service"
+function Grant-ScheduledTaskAcl {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Microsoft.Management.Infrastructure.CimInstance[]]
+        $Task,
 
-#     $task = Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName
-#     $TaskX = $Scheduler.GetFolder($task.TaskPath).GetTask($task.TaskName)
+        [Parameter(Mandatory, Position = 1)]
+        [string]
+        $Identity,
+        
+        [Parameter(Mandatory, Position = 2)]
+        [string]
+        $Rights
+    )
 
-#     $TaskX.SetSecurityDescriptor($SecurityDescriptor.sddl, 0x0)
-# }
+    begin {
+        $scheduler = New-Object -ComObject "Schedule.Service"
+        $scheduler.Connect()
+    }
 
-# # IdentityReference Property   System.Security.Principal.IdentityReference IdentityReference {get;}
-# Grant-ScheduledTaskAcl($TaskPath, $TaskName, $Identity, $Rights)
-# {
+    process {
+        $Task | ForEach-Object {
+            try {
+                $folder = $scheduler.GetFolder($_.TaskPath)
+                $TaskX = $folder.GetTask($_.TaskName)
+                $TaskX.SetSecurityDescriptor($SecurityDescriptor.Ssdl, 0x0)
+            }
+            catch {
+                Write-Error $_
+            }
+        }
+    }
 
-# }
+    end {
+    }
+}
